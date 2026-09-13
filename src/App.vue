@@ -1,3 +1,3 @@
 <template>
-  <h1>Pyramid Portfolio</h1>
+  <RouterView />
 </template>
