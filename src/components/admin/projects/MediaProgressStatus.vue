@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { MediaProgress } from '../../../types/MediaProgress'
-const props = defineProps<{ progress: MediaProgress }>()
+const props = defineProps<{ progress: MediaProgress; subject?: string }>()
 const labels = {
   preparing: 'Görseller hazırlanıyor…',
   checking: 'Proje bilgileri kontrol ediliyor…',
@@ -18,7 +18,7 @@ const countable = computed(
   <div class="media-progress-status" role="status" aria-live="polite" aria-atomic="true">
     <span class="progress-spinner" aria-hidden="true"></span>
     <div class="progress-description">
-      <strong>{{ labels[progress.stage] }}</strong>
+      <strong>{{ labels[progress.stage].replace('Proje', subject || 'Proje') }}</strong>
       <span v-if="countable"
         >{{ progress.completed }} / {{ progress.total }} dosya tamamlandı<span
           v-if="progress.filename"

@@ -1,3 +1,4 @@
+import type { HomepageMediaRow } from './HomepageMedia'
 // Schema contract for supabase/migrations/202609120001_portfolio.sql.
 // Regenerate with the Supabase CLI after future schema changes.
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
@@ -31,6 +32,8 @@ type Table<Row> = { Row: Row; Insert: never; Update: never; Relationships: [] }
 export interface Database {
   public: {
     Tables: {
+      homepage_media: Table<HomepageMediaRow>
+      homepage_media_cleanup: Table<{ object_path: string; queued_at: string }>
       project_categories: Table<{ project_id: number; category_id: number }>
       media_cleanup: Table<{ object_path: string; queued_at: string }>
       categories: Table<CategoryRow>
@@ -39,6 +42,16 @@ export interface Database {
     }
     Views: { [_ in never]: never }
     Functions: {
+      save_homepage_media: {
+        Args: {
+          p_version: number
+          p_request_id: string
+          p_mode: string
+          p_poster_path: string | null
+          p_video_path: string | null
+        }
+        Returns: number
+      }
       save_portfolio_project_presentation: Database['public']['Functions']['save_portfolio_project']
       save_portfolio_project_video: Database['public']['Functions']['save_portfolio_project']
       save_portfolio_project_gallery: Database['public']['Functions']['save_portfolio_project']

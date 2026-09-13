@@ -13,6 +13,7 @@ import ReferencesView from '../views/ReferencesView.vue'
 import AboutView from '../views/AboutView.vue'
 import ContactView from '../views/ContactView.vue'
 
+import HomepageAdminView from '../views/admin/HomepageAdminView.vue'
 import DashboardView from '../views/admin/DashboardView.vue'
 import ProjectsAdminView from '../views/admin/ProjectsAdminView.vue'
 import NewProjectView from '../views/admin/NewProjectView.vue'
@@ -78,6 +79,7 @@ const router = createRouter({
       meta: { requiresAuth: true },
 
       children: [
+        { path: 'ana-sayfa', name: 'admin-homepage', component: HomepageAdminView },
         {
           path: '',
           name: 'admin-dashboard',

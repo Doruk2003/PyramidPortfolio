@@ -68,6 +68,9 @@ beforeAll(async () => {
   await db.exec(
     readFileSync(new URL('../supabase/proje-acilis-medya-kurulumu.sql', import.meta.url), 'utf8'),
   )
+  await db.exec(
+    readFileSync(new URL('../supabase/ana-sayfa-medya-kurulumu.sql', import.meta.url), 'utf8'),
+  )
   expect(
     (await db.query('select project_id, category_id from public.project_categories')).rows,
   ).toEqual([{ project_id: legacy.rows[0]!.id, category_id: 6 }])
@@ -415,6 +418,73 @@ describe('Project opening media', () => {
         'select public.save_portfolio_project_presentation(null,null,$1,$2::jsonb,$3::jsonb)',
         [requestId, JSON.stringify({ ...project, hero_media: 'youtube' }), JSON.stringify(media)],
       ),
+    ).rejects.toMatchObject({ code: '22023' })
+  })
+})
+
+describe('Homepage settings and Storage isolation', () => {
+  const videoPath = `${uid}/${requestId}/video.mp4`
+  async function homeObject(path = videoPath, size = 100) {
+    await db.query(
+      "insert into storage.objects(bucket_id,name,metadata) values('homepage-media',$1,$2::jsonb)",
+      [path, JSON.stringify({ size, mimetype: 'video/mp4' })],
+    )
+  }
+  it('allows public settings reads but denies anonymous saves', async () => {
+    await db.exec('set local role anon')
+    expect((await db.query('select mode from public.homepage_media')).rows).toEqual([
+      { mode: 'image' },
+    ])
+    await expect(
+      db.query("select public.save_homepage_media(1,$1,'image',null,null)", [requestId]),
+    ).rejects.toMatchObject({ code: '42501' })
+  })
+  it('saves a video and queues it when switching to image mode', async () => {
+    await homeObject()
+    await db.query("select public.save_homepage_media(1,$1,'video',null,$2)", [
+      requestId,
+      videoPath,
+    ])
+    expect((await db.query('select mode,version from public.homepage_media')).rows).toEqual([
+      { mode: 'video', version: 2 },
+    ])
+    // A referenced file cannot be removed even by the uploading administrator.
+    expect(
+      (
+        await db.query(
+          "delete from storage.objects where bucket_id='homepage-media' returning name",
+        )
+      ).rows,
+    ).toEqual([])
+    await db.query("select public.save_homepage_media(2,$1,'image',null,null)", [
+      '33333333-3333-4333-8333-333333333333',
+    ])
+    expect((await db.query('select object_path from public.homepage_media_cleanup')).rows).toEqual([
+      { object_path: videoPath },
+    ])
+    expect(
+      (
+        await db.query(
+          "delete from storage.objects where bucket_id='homepage-media' returning name",
+        )
+      ).rows,
+    ).toEqual([{ name: videoPath }])
+  })
+  it('rejects stale settings versions', async () => {
+    await expect(
+      db.query("select public.save_homepage_media(0,$1,'image',null,null)", [requestId]),
+    ).rejects.toMatchObject({ code: '40001' })
+  })
+  it('enforces the actual stored video size', async () => {
+    await homeObject(videoPath, 21 * 1024 * 1024)
+    await expect(
+      db.query("select public.save_homepage_media(1,$1,'video',null,$2)", [requestId, videoPath]),
+    ).rejects.toMatchObject({ code: '22023' })
+  })
+  it('does not accept a project bucket file as homepage media', async () => {
+    await object()
+    await expect(
+      db.query("select public.save_homepage_media(1,$1,'image',$2,null)", [requestId, path]),
     ).rejects.toMatchObject({ code: '22023' })
   })
 })

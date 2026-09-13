@@ -10,6 +10,7 @@ const route = useRoute()
 const signOutError = ref('')
 const navigation = [
   { path: '/admin', label: 'Genel bakış', symbol: '◈' },
+  { path: '/admin/ana-sayfa', label: 'Ana sayfa', symbol: '⌂' },
   { path: '/admin/projeler', label: 'Projeler', symbol: '▦' },
   { path: '/admin/kategoriler', label: 'Sistemler', symbol: '◇' },
   { path: '/admin/medya', label: 'Medya', symbol: '▧' },
