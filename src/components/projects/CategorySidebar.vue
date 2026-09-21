@@ -1,28 +1,53 @@
 <script setup lang="ts">
+import { ref, watch } from 'vue'
 import type { CategoryFilterItem } from '../../types/Category'
 
 const props = defineProps<{
+  search?: string
   selectedCategory: number | 'all'
   categories: readonly CategoryFilterItem[]
   totalProjects: number
 }>()
 
 const emit = defineEmits<{
+  search: [query: string]
   change: [category: number | 'all']
 }>()
+const draft = ref(props.search ?? '')
+watch(
+  () => [props.search, props.selectedCategory] as const,
+  ([value]) => {
+    draft.value = value ?? ''
+  },
+)
+function submitSearch() {
+  draft.value = draft.value.trim()
+  emit('search', draft.value)
+}
 </script>
 
 <template>
   <aside class="category-sidebar">
-    <div class="category-search">
-      <input type="text" placeholder="Proje ara..." />
-    </div>
+    <form
+      class="category-search"
+      role="search"
+      aria-label="Portföyde ara"
+      @submit.prevent="submitSearch"
+    >
+      <label for="project-search">Proje adı ara</label>
+      <div class="search-controls">
+        <input id="project-search" v-model="draft" type="search" placeholder="Örn. Cam Balkon" />
+        <button type="submit">Ara</button>
+      </div>
+    </form>
 
     <h3>Kategoriler</h3>
 
     <button
       class="category-sidebar-item"
       :class="{ active: props.selectedCategory === 'all' }"
+      type="button"
+      :aria-pressed="props.selectedCategory === 'all'"
       @click="emit('change', 'all')"
     >
       <span>Tüm Projeler</span>
@@ -32,6 +57,8 @@ const emit = defineEmits<{
     <button
       v-for="category in categories"
       :key="category.id"
+      type="button"
+      :aria-pressed="props.selectedCategory === category.id"
       class="category-sidebar-item"
       :class="{
         active: props.selectedCategory === category.id,
@@ -54,7 +81,29 @@ const emit = defineEmits<{
   margin-bottom: 38px;
 }
 
+.category-search label {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+.search-controls {
+  display: flex;
+  gap: 8px;
+}
+.search-controls button {
+  min-height: 48px;
+  padding: 8px 14px;
+  border: 1px solid var(--color-text);
+  background: var(--color-text);
+  color: var(--color-background);
+  cursor: pointer;
+}
+.category-sidebar :is(input, button):focus-visible {
+  outline: 2px solid var(--color-text);
+  outline-offset: 3px;
+}
 .category-search input {
+  min-width: 0;
   width: 100%;
   height: 48px;
 
